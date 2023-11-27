@@ -2,12 +2,15 @@ package grpc_server
 
 import (
 	"context"
-	"google.golang.org/grpc"
 	"log"
+
 	pb "practice/internal/grpc"
 	"practice/storage/postgres"
+
+	"google.golang.org/grpc"
 )
 
+// Server struct contains info about gRPC server
 type Server struct {
 	pb.UnimplementedGRPCServiceServer
 	Grpc   *grpc.Server
@@ -17,6 +20,7 @@ type Server struct {
 
 type grpcServer Server
 
+// New creates and returns new gRPC server
 func New(db *postgres.TelematicDB) *Server {
 	s := Server{
 		Grpc: grpc.NewServer(),
@@ -26,34 +30,23 @@ func New(db *postgres.TelematicDB) *Server {
 	return &s
 }
 
-/*
-func (s *Server) Open() {
-	lis, err := net.Listen("tcp", s.addr)
-	if err != nil {
-		log.Fatalf("could not listen to port: %s", err)
-	}
-	s.lis = lis
-	if err := s.Grpc.Serve(lis); err != nil {
-		s.logger.Println("gRPC server returned:", err.Error())
-	}
-}
-*/
-
+// Close method stops gRPC server
 func (g *grpcServer) Close() error {
 	g.Grpc.GracefulStop()
 	g.logger.Println("gRPC server stopped")
 	return nil
 }
 
-func (g *grpcServer) GetByDate(ctx context.Context, req *pb.GetByDateRequest) (*pb.GetByDateResponse, error) {
+// GetCarsByDate gRPC method for getting list of cars by its date
+func (g *grpcServer) GetCarsByDate(ctx context.Context, req *pb.CarsByDateRequest) (*pb.CarsByDateResponse, error) {
 	firstDate := req.GetFirstDate()
 	lastDate := req.GetLastDate()
 	nums := req.GetNums()
-	res, err := g.db.GetByDate(firstDate, lastDate, nums)
+	res, err := g.db.GetByDate(ctx, firstDate, lastDate, nums)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetByDateResponse{
+	return &pb.CarsByDateResponse{
 		Cars: res,
 	}, nil
 	//for
@@ -62,13 +55,14 @@ func (g *grpcServer) GetByDate(ctx context.Context, req *pb.GetByDateRequest) (*
 	//}, nil
 }
 
-func (g *grpcServer) GetLast(ctx context.Context, req *pb.GetLastRequest) (*pb.GetLastResponse, error) {
+// GetLastCars is gRPC method for getting list of recent entries about cars by its number
+func (g *grpcServer) GetLastCars(ctx context.Context, req *pb.LastCarsRequest) (*pb.LastCarsResponse, error) {
 	nums := req.GetNums()
-	res, err := g.db.GetByCarNumber(nums)
+	res, err := g.db.GetByCarNumber(ctx, nums)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetLastResponse{
+	return &pb.LastCarsResponse{
 		Cars: res,
 	}, nil
 }

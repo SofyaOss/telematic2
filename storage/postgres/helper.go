@@ -6,7 +6,8 @@ import (
 	"practice/storage"
 )
 
-func CarPostgresToProto(pgCar *storage.Car) *pb.Car {
+// ConvertCarsToProtoCars converts storage.Car type to proto.Car type
+func ConvertCarsToProtoCars(pgCar *storage.Car) *pb.Car {
 	return &pb.Car{
 		Id:        int64(pgCar.ID),
 		Number:    int64(pgCar.Number),

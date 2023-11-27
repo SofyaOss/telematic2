@@ -1,13 +1,15 @@
 package redis
 
 import (
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 	"log"
 	"net"
+	"testing"
+
 	"practice/internal/generator"
 	"practice/storage"
-	"testing"
+
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 )
 
 func TestAddToRedis(t *testing.T) {
@@ -48,11 +50,14 @@ func TestAddToRedis(t *testing.T) {
 			}
 			err = client.AddToRedis(c, i)
 			if err != nil {
-				log.Fatalf("Could not add to redis: %s", err)
+				return err
 			}
 		}
 		return nil
 	})
+	if err != nil {
+		log.Fatalf("Redis test failed: %s", err)
+	}
 
 	if err = pool.Purge(redisRes); err != nil {
 		log.Fatalf("Could not purge resource: %s", err)

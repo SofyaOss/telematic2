@@ -1,33 +1,34 @@
 package generator
 
 import (
-	"fmt"
 	"log"
-	"practice/storage"
-	"time"
-
-	//"github.com/golang/protobuf/protoc-gen-go/generator"
 	"math/rand"
 	"testing"
-	//"github.com/confluentinc/confluent-kafka-go/kafka"
+	"time"
+
+	"practice/storage"
 )
 
 func TestGenerator(t *testing.T) {
-	kafkaCh := make(chan *storage.Car)
+	telematicCh := make(chan *storage.Car)
 	log.Println("Starting generator...")
-	go Generate(rand.Intn(3), kafkaCh)
+	go GenerateTelematic(rand.Intn(3), telematicCh)
+
+	emptyStruct := &storage.Car{}
 
 	go func() {
 		for {
-			val, ok := <-kafkaCh
+			val, ok := <-telematicCh
 			if ok == false {
 				break // exit break loop
 			} else {
-				fmt.Println(val, ok)
+				if val == emptyStruct {
+					log.Fatal("Generator error: returned empty struct")
+				}
 			}
 		}
 	}()
 
 	time.Sleep(5 * time.Second)
-	close(kafkaCh)
+	close(telematicCh)
 }

@@ -1,12 +1,14 @@
 package kafka
 
 import (
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 	"log"
+	"testing"
+
 	"practice/internal/generator"
 	"practice/storage"
-	"testing"
+
+	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 )
 
 func TestProduce(t *testing.T) {
@@ -56,7 +58,7 @@ func TestProduce(t *testing.T) {
 	defer pool.Purge(kafkaRes)
 
 	err = pool.Retry(func() error {
-		newKafkaProducer, err := NewProducer() // создание продюсера кафки
+		newKafkaProducer, err := NewProducer("kafka:9092") // создание продюсера кафки
 		if err != nil {
 			log.Fatalf("Could not connect to kafka: %s", err)
 		}
@@ -70,11 +72,14 @@ func TestProduce(t *testing.T) {
 			}
 			err = Produce(newKafkaProducer, c)
 			if err != nil {
-				log.Fatalf("Could not send message to kafka: %s", err)
+				return err
 			}
 		}
 		return nil
 	})
+	if err != nil {
+		log.Fatalf("Kafka test failed: %s", err)
+	}
 
 	if err = pool.Purge(kafkaRes); err != nil {
 		log.Fatalf("Could not purge resource: %s", err)

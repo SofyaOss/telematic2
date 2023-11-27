@@ -2,16 +2,20 @@ package redis
 
 import (
 	"encoding/json"
-	"github.com/go-redis/redis"
 	"log"
-	"practice/storage"
 	"strconv"
+
+	"practice/storage"
+
+	"github.com/go-redis/redis"
 )
 
+// Client struct for redis client
 type Client struct {
 	client *redis.Client
 }
 
+// New creates new redis client
 func New(addr string) *Client { // создание нового клиента редис
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
@@ -22,6 +26,7 @@ func New(addr string) *Client { // создание нового клиента 
 	return &c
 }
 
+// AddToRedis adds telematic to redis
 func (c *Client) AddToRedis(car *storage.Car, key int) error { // отправка сообщения в редис
 	mes, err := json.Marshal(car)
 	if err != nil {
@@ -31,20 +36,18 @@ func (c *Client) AddToRedis(car *storage.Car, key int) error { // отправк
 	if key < 1000 {
 		err = c.client.Set(strconv.Itoa(key), mes, 0).Err()
 		if err != nil {
-			log.Fatalf("Could not set value in redis: %s", err)
+			log.Printf("Could not set value in redis: %s", err)
 			return err
-		} else {
-			key++
 		}
+		key++
 	} else {
 		c.client.Del(strconv.Itoa(key - 1000))
 		err = c.client.Set(strconv.Itoa(key), mes, 0).Err()
 		if err != nil {
-			log.Fatalf("Could not set value in redis: %s", err)
+			log.Printf("Could not set value in redis: %s", err)
 			return err
-		} else {
-			key++
 		}
+		key++
 	}
 	return nil
 }

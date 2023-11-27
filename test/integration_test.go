@@ -2,28 +2,26 @@ package test
 
 import (
 	"context"
+	"errors"
 	"flag"
-	//"github.com/go-redis/redis"
+	"fmt"
+	"log"
 	"net"
+	"os"
+	"testing"
+	"time"
+
+	"practice/internal/generator"
 	"practice/internal/grpc_server"
 	"practice/internal/kafka"
 	"practice/internal/redis"
-	//"strconv"
+	"practice/internal/service"
+	"practice/storage"
+	"practice/storage/postgres"
 
-	//"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
-	"log"
-	"os"
-	"practice/internal/generator"
-	//myRedis "practice/internal/redis"
-	"practice/storage"
-	"practice/storage/postgres"
-	"testing"
-	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -106,7 +104,7 @@ func TestMain(m *testing.M) {
 		//client := myRedis.New()
 		//defer client.Close()
 
-		newKafkaProducer, err := kafka.NewProducer() // создание продюсера кафки
+		newKafkaProducer, err := kafka.NewProducer("kafka:9092") // создание продюсера кафки
 		if err != nil {
 			log.Fatalf("Could not connect to kafka: %s", err)
 		}
@@ -119,17 +117,17 @@ func TestMain(m *testing.M) {
 			log.Println("db not ready yet")
 			return err
 		}
-		err = db.DropTable()
+		err = db.DropTable(ctx)
 		if err != nil {
 			log.Fatalf("Could not drop table: %s", err)
 		}
-		err = db.CreateTable()
+		err = db.CreateTable(ctx)
 		if err != nil {
 			log.Fatalf("Could not create table: %s", err)
 		}
 
 		kafkaCh := make(chan *storage.Car)
-		go generator.Generate(1, kafkaCh)
+		go generator.GenerateTelematic(1, kafkaCh)
 		key := 0
 		go func() {
 			for {
@@ -138,7 +136,7 @@ func TestMain(m *testing.M) {
 					close(kafkaCh)
 					break // exit break loop
 				} else {
-					err = db.AddData(val)
+					err = service.AddTelematic(ctx, db, val)
 					if err != nil && !errors.Is(pgx.ErrNoRows, err) {
 						log.Fatalf("Could not add element to db: %s", err)
 					}

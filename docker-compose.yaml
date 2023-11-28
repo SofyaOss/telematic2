@@ -1,0 +1,83 @@
+version: "3.7"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    hostname: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      #       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,OUTSIDE://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      #       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+
+  init-kafka:
+    container_name: init-kafka
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - kafka
+    command: kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic telematicTopic --replication-factor 1 --partitions 1
+
+  kowl:
+     image: quay.io/cloudhut/kowl:master
+     container_name: kowl
+     ports:
+     - "8080:8080"
+     environment:
+      KAFKA_BROKERS: kafka:9092
+     depends_on:
+     - kafka
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  app:
+    container_name: app
+    build: .
+    environment:
+      DATABASE_URL: "host=db user=postgres password=postgres dbname=postgres sslmode=disable"
+      TRANSPORT_AMOUNT: 7
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - kafka
+      - redis
+
+  db:
+    container_name: db
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata: { }
+  cache:
+    driver: local

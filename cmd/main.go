@@ -26,26 +26,26 @@ type Application struct {
 func main() {
 	log.Println("Start telematic service...")
 
-	conf := getConfig() // настройки сервиса
+	conf := getConfig() // app settings
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	db, err := postgres.New(ctx, os.Getenv("DATABASE_URL")) // подключение к бд
+	db, err := postgres.New(ctx, os.Getenv("DATABASE_URL")) // connect to db
 	if err != nil {
 		cancel()
 		log.Fatalf("Could not connect to postgres db: %s", err)
 	}
 
-	newRedis := redis.New(getRedisConf(conf)) // создание клиента редис
+	newRedis := redis.New(getRedisConf(conf)) // create redis client
 
-	newKafkaProducer, err := myKafka.NewProducer(getKafkaConf(conf)) // создание продюсера кафки
+	newKafkaProducer, err := myKafka.NewProducer(getKafkaConf(conf)) // create kafka producer
 	if err != nil {
 		cancel()
 		log.Fatalf("Could not connect to kafka: %s", err)
 	}
 
-	telematicCh := make(chan *storage.Car) // канал для передачи телематики
+	telematicCh := make(chan *storage.Car) // telematics transmission channel
 
 	app := &Application{
 		channel:  telematicCh,

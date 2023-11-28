@@ -65,7 +65,7 @@ func main() {
 	log.Println("start consumer")
 
 	config2 := &kafka.ConfigMap{
-		"bootstrap.servers": "kafka:9092",
+		"bootstrap.servers": getKafkaConf(conf),
 		"group.id":          "myGroup",
 		"auto.offset.reset": "earliest",
 	}
@@ -78,6 +78,7 @@ func main() {
 		for {
 			_, err := consumer.ReadMessage(-1)
 			if err != nil {
+				cancel()
 				log.Fatalf("kafka: %s", err)
 			}
 		}

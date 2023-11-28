@@ -28,7 +28,7 @@ func NewProducer(addr string) (*Producer, error) {
 	topic := "telematicTopic"
 	producer, err := kafka.NewProducer(config)
 	if err != nil {
-		log.Fatalf("could not connect to kafka: %s", err)
+		log.Printf("could not connect to kafka: %s", err)
 		return nil, err
 	}
 	p := Producer{prod: producer, topic: topic}
@@ -39,7 +39,8 @@ func NewProducer(addr string) (*Producer, error) {
 func Produce(producer *Producer, item *storage.Car) error {
 	mes, err := json.Marshal(item)
 	if err != nil {
-		log.Fatalf("Could not convert data to json: %s", err)
+		log.Printf("Could not convert data to json: %s", err)
+		return err
 	}
 	err = producer.prod.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &producer.topic, Partition: kafka.PartitionAny},
